@@ -46,7 +46,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            CADDY_VERSION=v2.8.4
+            CADDY_VERSION=latest
             NAIVE_VERSION=naive
           cache-from: type=gha
           cache-to: type=gha,mode=max
