@@ -2,7 +2,7 @@
 set -e  # 遇到错误立即退出
 
 # Docker 镜像名称 - 改为你的 Docker Hub 用户名
-DOCKER_IMAGE="your-dockerhub-username/caddy-naiveproxy:latest"
+DOCKER_IMAGE="aizhihuxiao/caddy-nv:latest"
 
 echo "========================================="
 echo "  Caddy NaiveProxy 交互式部署脚本"

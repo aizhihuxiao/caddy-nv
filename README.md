@@ -1,10 +1,10 @@
-# Caddy with NaiveProxy
+# Caddy with Cloudflare DNS
 
-基于 Caddy 构建的 NaiveProxy 服务器镜像，集成 Cloudflare DNS 插件，支持自动申请通配符 SSL 证书。
+基于 Caddy 构建的 Web 服务器镜像，集成 Cloudflare DNS 插件，支持自动申请通配符 SSL 证书。
 
 ## 特性
 
-- ✅ **NaiveProxy** - 最新版本的 naive forwardproxy 插件
+- ✅ **Caddy** - 现代化的 Web 服务器
 - ✅ **Cloudflare DNS** - 支持通配符证书自动申请
 - ✅ **自动更新** - 定期构建最新版本
 - ✅ **高性能** - 优化的网络配置，支持 BBR
@@ -50,13 +50,11 @@ docker run -d --name caddy \
     --restart=always \
     --net=host \
     -e CF_API_TOKEN=your_cloudflare_api_token \
-    -e NAIVE_USER=username \
-    -e NAIVE_PASSWD=password \
     -v ./Caddyfile:/etc/caddy/Caddyfile:ro \
     -v caddy_data:/data/caddy \
     -v caddy_config:/config \
     -v caddy_logs:/var/log/caddy \
-    yourusername/caddy-naiveproxy:latest
+    aizhihuxiao/caddy-nv:latest
 ```
 
 ### 3. 使用部署脚本（推荐）
@@ -80,8 +78,6 @@ chmod +x run-interactive.sh
 | 变量 | 说明 | 示例 |
 |------|------|------|
 | `CF_API_TOKEN` | Cloudflare API Token | `abc123...` |
-| `NAIVE_USER` | NaiveProxy 用户名 | `myuser` |
-| `NAIVE_PASSWD` | NaiveProxy 密码 | `mypassword` |
 
 ## 目录说明
 
@@ -135,7 +131,7 @@ NaiveProxy 客户端配置示例：
 
 ```bash
 # 拉取最新版本
-docker pull yourusername/caddy-naiveproxy:latest
+docker pull aizhihuxiao/caddy-nv:latest
 
 # 重启容器
 docker restart caddy
@@ -201,6 +197,5 @@ docker logs caddy
 
 ## 相关链接
 
-- [NaiveProxy 官方](https://github.com/klzgrad/naiveproxy)
 - [Caddy 文档](https://caddyserver.com/docs/)
 - [Cloudflare API](https://developers.cloudflare.com/api/)

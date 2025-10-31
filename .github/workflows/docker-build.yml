@@ -30,7 +30,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/caddy-naiveproxy
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/caddy-nv
           tags: |
             type=raw,value=latest
             type=raw,value={{date 'YYYYMMDD'}}
@@ -56,6 +56,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          repository: ${{ secrets.DOCKERHUB_USERNAME }}/caddy-naiveproxy
-          short-description: "Caddy with NaiveProxy and Cloudflare DNS support"
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/caddy-nv
+          short-description: "Caddy with Cloudflare DNS support"
           readme-filepath: ./README.md

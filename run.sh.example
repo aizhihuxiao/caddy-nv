@@ -11,7 +11,7 @@ naive_user="your-username"              # Naive 用户名
 naive_passwd="your-password"            # Naive 密码（建议使用 UUID）
 
 # Docker 镜像名称 - 改为你的 Docker Hub 用户名
-DOCKER_IMAGE="your-dockerhub-username/caddy-naiveproxy:latest"
+DOCKER_IMAGE="aizhihuxiao/caddy-nv:latest"
 
 echo "========================================="
 echo "开始部署 Caddy NaiveProxy 服务"

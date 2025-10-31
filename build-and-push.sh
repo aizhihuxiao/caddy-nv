@@ -2,8 +2,8 @@
 set -e
 
 # 配置 - 修改为你的 Docker Hub 用户名
-DOCKERHUB_USERNAME="your-username"
-IMAGE_NAME="${DOCKERHUB_USERNAME}/caddy-naiveproxy"
+DOCKERHUB_USERNAME="aizhihuxiao"
+IMAGE_NAME="${DOCKERHUB_USERNAME}/caddy-nv"
 DATE_TAG=$(date +%Y%m%d)
 
 echo "========================================="
