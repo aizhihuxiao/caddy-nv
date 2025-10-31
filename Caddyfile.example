@@ -1,66 +1,191 @@
-# HTTPS 配置
-:443, *.domain {
+:443, domain, *.domain {# HTTPS 配置 - NaiveProxy 必须使用 443 端口# HTTPS 配置
+
     tls {
-        dns cloudflare cloudflareApiToken
+
+        dns cloudflare cloudflareApiToken:443, domain, *.domain {:443, *.domain {
+
         protocols tls1.2 tls1.3
-        # 使用主流密码套件，模拟 Chrome/Firefox
-        ciphers TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256
-        # ALPN 协商，支持 HTTP/2
+
+        ciphers TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256    tls {    tls {
+
         alpn h2 http/1.1
-    }
 
-    # 移除服务器特征
-    header {
+    }        dns cloudflare cloudflareApiToken        dns cloudflare cloudflareApiToken
+
+
+
+    header {        protocols tls1.2 tls1.3        protocols tls1.2 tls1.3
+
         -Server
-        -X-Powered-By
+
+        -X-Powered-By        ciphers TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256        # 使用主流密码套件，模拟 Chrome/Firefox
+
         -Alt-Svc
-    }
 
-    # 启用 HTTP/2
-    protocols h1 h2
+    }        alpn h2 http/1.1        ciphers TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384 TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256 TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256
 
-    route {
-        # 简单伪装端点
+
+
+    route {    }        # ALPN 协商，支持 HTTP/2
+
         respond /robots.txt 200 {
-            body "User-agent: *\nDisallow: /"
+
+            body "User-agent: *\nDisallow: /"        alpn h2 http/1.1
+
         }
-        
+
+            header {    }
+
         respond /favicon.ico 204
-        
-        # NaiveProxy 核心
+
+                -Server
+
         forward_proxy {
-            basic_auth naiveUser naivePasswd
+
+            basic_auth naiveUser naivePasswd        -X-Powered-By    # 移除服务器特征
+
             hide_ip
-            hide_via
+
+            hide_via        -Alt-Svc    header {
+
             probe_resistance
-        }
+
+        }    }        -Server
+
         
-        # 你的后端服务 - 性能优化
-        reverse_proxy /proxyPath localhost:2333 {
+
+        reverse_proxy /proxyPath localhost:2333 {        -X-Powered-By
+
             header_up -Origin
-            header_up X-Real-IP {remote_host}
-            
-            # 性能优化：不缓冲，直接传输
+
+            header_up X-Real-IP {remote_host}    route {        -Alt-Svc
+
             flush_interval -1
-            
-            # 超时设置
+
+                    respond /robots.txt 200 {    }
+
             transport http {
-                dial_timeout 30s
+
+                dial_timeout 30s            body "User-agent: *\nDisallow: /"
+
                 response_header_timeout 0
-                read_timeout 0
+
+                read_timeout 0        }    # 访问日志
+
                 write_timeout 0
-                keepalive 90s
+
+                keepalive 90s            log {
+
                 keepalive_idle_conns 100
-            }
+
+            }        respond /favicon.ico 204        output file /var/log/caddy/access.log {
+
+        }
+
+                            roll_size 10mb
+
+        reverse_proxy https://www.catalog.update.microsoft.com {
+
+            header_up Host {upstream_hostport}        forward_proxy {            roll_keep 5
+
+            header_up X-Real-IP {remote_host}
+
+            header_up User-Agent {header.User-Agent}            basic_auth naiveUser naivePasswd            roll_keep_for 720h
+
+            header_up Accept {header.Accept}
+
+            header_up Accept-Language {header.Accept-Language}            hide_ip        }
+
+            header_up Accept-Encoding {header.Accept-Encoding}
+
+                        hide_via        format json
+
+            transport http {
+
+                dial_timeout 30s            probe_resistance    }
+
+                keepalive 90s
+
+                keepalive_idle_conns 100        }
+
+                versions 2 1.1
+
+            }            route {
+
+        }
+
+    }        reverse_proxy /proxyPath localhost:2333 {        # 简单伪装端点
+
+}
+
+            header_up -Origin        respond /robots.txt 200 {
+
+            header_up X-Real-IP {remote_host}            body "User-agent: *\nDisallow: /"
+
+            flush_interval -1        }
+
+                    
+
+            transport http {        respond /favicon.ico 204
+
+                dial_timeout 30s        
+
+                response_header_timeout 0        # NaiveProxy 核心
+
+                read_timeout 0        forward_proxy {
+
+                write_timeout 0            basic_auth naiveUser naivePasswd
+
+                keepalive 90s            hide_ip
+
+                keepalive_idle_conns 100            hide_via
+
+            }            probe_resistance
+
+        }        }
+
+                
+
+        reverse_proxy https://www.catalog.update.microsoft.com {        # 你的后端服务 - 性能优化
+
+            header_up Host {upstream_hostport}        reverse_proxy /proxyPath localhost:2333 {
+
+            header_up X-Real-IP {remote_host}            header_up -Origin
+
+            header_up User-Agent {header.User-Agent}            header_up X-Real-IP {remote_host}
+
+            header_up Accept {header.Accept}            
+
+            header_up Accept-Language {header.Accept-Language}            # 性能优化：不缓冲，直接传输
+
+            header_up Accept-Encoding {header.Accept-Encoding}            flush_interval -1
+
+                        
+
+            transport http {            # 超时设置
+
+                dial_timeout 30s            transport http {
+
+                keepalive 90s                dial_timeout 30s
+
+                keepalive_idle_conns 100                response_header_timeout 0
+
+                versions 2 1.1                read_timeout 0
+
+            }                write_timeout 0
+
+        }                keepalive 90s
+
+    }                keepalive_idle_conns 100
+
+}            }
+
         }
         
         # Microsoft Update 伪装
         reverse_proxy https://www.catalog.update.microsoft.com {
             header_up Host {upstream_hostport}
-            header_up X-Forwarded-Host {host}
             header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up X-Forwarded-Proto {scheme}
             header_up User-Agent {header.User-Agent}
             header_up Accept {header.Accept}
             header_up Accept-Language {header.Accept-Language}
@@ -71,18 +196,8 @@
                 dial_timeout 30s
                 keepalive 90s
                 keepalive_idle_conns 100
-                versions h2 1.1
+                versions 2 1.1
             }
-        }
-        
-        # 访问日志
-        log {
-            output file /var/log/caddy/access.log {
-                roll_size 10mb
-                roll_keep 5
-                roll_keep_for 720h
-            }
-            format json
         }
     }
 }
