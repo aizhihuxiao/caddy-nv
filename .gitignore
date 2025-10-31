@@ -25,8 +25,11 @@ caddy/logs/
 config.txt
 
 # 部署脚本（包含敏感信息）
+*.sh
 run.sh
 run-interactive.sh
+run-naicha.sh
+build-and-push.sh
 
 # 证书文件（敏感）
 certificates/
