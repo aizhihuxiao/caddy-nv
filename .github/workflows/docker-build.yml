@@ -5,7 +5,21 @@ on:
     branches: [main, master]
   schedule:
     - cron: '0 2 * * 0'  # 每周日凌晨 2 点自动构建最新版本
-  workflow_dispatch:  # 支持手动触发
+  workflow_dispatch:  # 手动触发：更新 NaiveProxy 核心和 Caddy
+    inputs:
+      caddy_version:
+        description: 'Caddy 版本 (latest 或 v2.8.4)'
+        required: false
+        default: 'latest'
+      naive_version:
+        description: 'NaiveProxy 分支 (naive 或特定 commit)'
+        required: false
+        default: 'naive'
+      force_rebuild:
+        description: '强制重新构建 (不使用缓存)'
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   build-and-push:
@@ -42,12 +56,12 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          no-cache: true
+          no-cache: ${{ github.event.inputs.force_rebuild || github.event_name == 'schedule' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            CADDY_VERSION=latest
-            NAIVE_VERSION=naive
+            CADDY_VERSION=${{ github.event.inputs.caddy_version || 'latest' }}
+            NAIVE_VERSION=${{ github.event.inputs.naive_version || 'naive' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       
