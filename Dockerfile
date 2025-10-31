@@ -1,8 +1,8 @@
 # 构建阶段 - 使用固定版本，更可靠
 FROM caddy:2.8-builder-alpine AS builder
 
-# 构建参数 - 可以在构建时覆盖
-ARG CADDY_VERSION=latest
+# 构建参数 - 使用稳定版本避免 Go 版本不兼容
+ARG CADDY_VERSION=v2.8.4
 ARG NAIVE_VERSION=naive
 
 # 安装 git 以便拉取最新代码
