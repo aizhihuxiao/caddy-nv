@@ -6,6 +6,9 @@ ARG CADDY_VERSION=latest
 ARG NAIVE_VERSION=naive
 ARG XCADDY_VERSION=v0.4.4
 
+# 设置 GOTOOLCHAIN 允许自动下载更新的 Go 版本
+ENV GOTOOLCHAIN=auto
+
 # 安装构建依赖
 RUN apk add --no-cache git ca-certificates
 
