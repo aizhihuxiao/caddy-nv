@@ -1,0 +1,36 @@
+# Git
+.git/
+
+# Docker
+.dockerignore
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 敏感配置文件
+caddy/Caddyfile
+caddy/data/
+caddy/config/
+caddy/logs/
+*.env
+config.txt
+
+# 证书文件（敏感）
+certificates/
+*.crt
+*.key
+*.pem
+
+# 临时文件
+*.tmp
+*.bak
+*.old

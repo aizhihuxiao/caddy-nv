@@ -1,0 +1,185 @@
+#!/bin/bash
+set -e  # 遇到错误立即退出
+
+# 写死的配置参数
+domain="99gtr.com"
+proxyPath="v2god"
+cloudflareApiToken="I_ULOfwplN6EInxBN1SNWA6Jh6nkyqLsVu-Fiwb0"
+naive_user="aizhihuxiao"
+naive_passwd="ecf9a79e-2ff6-4eb7-9e4b-02bffcab5881"
+
+echo "========================================="
+echo "开始部署 Caddy NaiveProxy 服务"
+echo "域名: ${domain}"
+echo "========================================="
+
+# 设置时区
+ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+echo "Asia/Shanghai" > /etc/timezone
+
+# 更新系统并安装依赖
+echo "📦 安装系统依赖..."
+apt update && apt upgrade -y
+apt install -y curl ca-certificates gnupg
+
+# 安装 Docker（如果未安装）
+if ! command -v docker &> /dev/null; then
+    echo "🐳 安装 Docker..."
+    curl -fsSL https://get.docker.com | sh
+    systemctl enable docker
+    systemctl start docker
+else
+    echo "✅ Docker 已安装"
+fi
+
+# 同步时间
+apt install -y ntpdate
+ntpdate -u pool.ntp.org
+
+# 创建目录结构
+echo "📁 创建目录..."
+mkdir -p caddy/{data,config,logs}
+
+# 生成 Caddyfile
+if [ ! -f "./caddy/Caddyfile" ]; then
+    echo "📝 生成 Caddyfile..."
+    cp Caddyfile.example ./caddy/Caddyfile
+    sed -i "s/domain/${domain}/g" ./caddy/Caddyfile
+    sed -i "s/proxyPath/${proxyPath}/g" ./caddy/Caddyfile
+    sed -i "s/cloudflareApiToken/${cloudflareApiToken}/g" ./caddy/Caddyfile
+    sed -i "s/naiveUser/${naive_user}/g" ./caddy/Caddyfile
+    sed -i "s/naivePasswd/${naive_passwd}/g" ./caddy/Caddyfile
+else
+    echo "⚠️  Caddyfile 已存在，跳过生成"
+fi
+
+# 停止并删除旧容器（如果存在）
+if docker ps -a --format '{{.Names}}' | grep -q "^caddy$"; then
+    echo "🗑️  删除旧的 Caddy 容器..."
+    docker stop caddy 2>/dev/null || true
+    docker rm caddy
+fi
+
+# 启动 Caddy 容器
+echo "🚀 启动 Caddy 容器..."
+docker run -d --name caddy \
+    --restart=always \
+    --net=host \
+    --log-opt max-size=10m \
+    --log-opt max-file=3 \
+    -v $PWD/caddy/Caddyfile:/etc/caddy/Caddyfile:ro \
+    -v $PWD/caddy/data:/data/caddy \
+    -v $PWD/caddy/config:/config \
+    -v $PWD/caddy/logs:/var/log/caddy \
+    lingex/caddy-cf-naive
+
+# 检查 Caddy 启动状态
+echo "⏳ 等待 Caddy 启动..."
+sleep 5
+if docker ps | grep -q caddy; then
+    echo "✅ Caddy 容器启动成功"
+    docker logs caddy --tail 20
+else
+    echo "❌ Caddy 容器启动失败，查看日志:"
+    docker logs caddy
+    exit 1
+fi
+
+# 启动 Watchtower 自动更新
+if ! docker ps -a --format '{{.Names}}' | grep -q "^watchtower$"; then
+    echo "🔄 启动 Watchtower 自动更新..."
+    docker run -d --name watchtower \
+        --restart=unless-stopped \
+        -v /var/run/docker.sock:/var/run/docker.sock \
+        containrrr/watchtower --cleanup --interval 86400
+else
+    echo "✅ Watchtower 已在运行"
+fi
+
+# 开启 BBR 和性能优化
+echo "🚄 配置网络性能优化..."
+modprobe tcp_bbr 2>/dev/null || echo "⚠️  BBR 模块加载失败"
+
+cat >> /etc/sysctl.conf << EOF
+# BBR 加速
+net.core.default_qdisc=fq
+net.ipv4.tcp_congestion_control=bbr
+
+# TCP 性能优化
+net.ipv4.tcp_fastopen=3
+net.ipv4.tcp_slow_start_after_idle=0
+net.ipv4.tcp_mtu_probing=1
+net.ipv4.tcp_notsent_lowat=16384
+
+# 连接队列优化
+net.core.somaxconn=65535
+net.ipv4.tcp_max_syn_backlog=8192
+net.core.netdev_max_backlog=16384
+
+# 大缓冲区 - 提升高带宽性能
+net.core.rmem_max=134217728
+net.core.wmem_max=134217728
+net.ipv4.tcp_rmem=4096 87380 67108864
+net.ipv4.tcp_wmem=4096 65536 67108864
+net.ipv4.tcp_mem=786432 1048576 26777216
+
+# TIME_WAIT 快速回收
+net.ipv4.tcp_tw_reuse=1
+net.ipv4.tcp_fin_timeout=15
+
+# 保持连接活跃
+net.ipv4.tcp_keepalive_time=600
+net.ipv4.tcp_keepalive_intvl=10
+net.ipv4.tcp_keepalive_probes=3
+
+# IP 转发（如果需要）
+net.ipv4.ip_forward=1
+net.ipv6.conf.all.forwarding=1
+EOF
+
+sysctl -p > /dev/null
+
+# 验证优化
+echo "✅ 网络优化已应用"
+sysctl net.ipv4.tcp_congestion_control
+sysctl net.ipv4.tcp_fastopen
+
+# 禁用系统防火墙（使用云防火墙）
+echo "🔥 禁用系统防火墙..."
+if command -v ufw &> /dev/null; then
+    ufw --force disable
+    systemctl disable ufw 2>/dev/null || true
+    echo "✅ UFW 防火墙已禁用"
+fi
+
+if command -v firewalld &> /dev/null; then
+    systemctl stop firewalld
+    systemctl disable firewalld
+    echo "✅ Firewalld 已禁用"
+fi
+
+# 清理可能存在的 iptables 规则
+iptables -F
+iptables -X
+iptables -P INPUT ACCEPT
+iptables -P FORWARD ACCEPT
+iptables -P OUTPUT ACCEPT
+echo "✅ iptables 规则已清空"
+
+echo ""
+echo "========================================="
+echo "✅ 部署完成！"
+echo "========================================="
+echo "域名: ${domain}"
+echo "代理路径: /${proxyPath}"
+echo "Naive 用户: ${naive_user}"
+echo ""
+echo "⚠️  请在云服务商控制台配置安全组："
+echo "   - 开放 22/tcp  (SSH)"
+echo "   - 开放 80/tcp  (HTTP)"
+echo "   - 开放 443/tcp (HTTPS)"
+echo ""
+echo "📊 查看日志: docker logs -f caddy"
+echo "🔍 检查状态: docker ps"
+echo "🛑 停止服务: docker stop caddy"
+echo "========================================="
