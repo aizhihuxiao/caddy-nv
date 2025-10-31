@@ -24,6 +24,10 @@ caddy/logs/
 *.env
 config.txt
 
+# 部署脚本（包含敏感信息）
+run.sh
+run-interactive.sh
+
 # 证书文件（敏感）
 certificates/
 *.crt

@@ -1,19 +1,22 @@
 #!/bin/bash
 set -e  # 遇到错误立即退出
 
+# Docker 镜像名称 - 改为你的 Docker Hub 用户名
+DOCKER_IMAGE="your-dockerhub-username/caddy-naiveproxy:latest"
+
 echo "========================================="
 echo "  Caddy NaiveProxy 交互式部署脚本"
 echo "========================================="
 echo ""
 
 # 交互式输入配置参数
-read -p "请输入域名 (例如: 99gtr.com): " domain
+read -p "请输入域名 (例如: example.com): " domain
 while [ -z "$domain" ]; do
     echo "❌ 域名不能为空！"
     read -p "请输入域名: " domain
 done
 
-read -p "请输入代理路径 (例如: v2god): " proxyPath
+read -p "请输入代理路径 (例如: mypath): " proxyPath
 while [ -z "$proxyPath" ]; do
     echo "❌ 代理路径不能为空！"
     read -p "请输入代理路径: " proxyPath
@@ -48,6 +51,7 @@ echo "代理路径: /${proxyPath}"
 echo "Cloudflare Token: ${cloudflareApiToken:0:20}..."
 echo "Naive 用户: ${naive_user}"
 echo "Naive 密码: ${naive_passwd:0:8}..."
+echo "Docker 镜像: ${DOCKER_IMAGE}"
 echo "========================================="
 echo ""
 
@@ -85,7 +89,7 @@ fi
 # 同步时间
 echo "🕐 同步系统时间..."
 apt install -y ntpdate
-ntpdate -u pool.ntp.org
+ntpdate -u pool.ntp.org || ntpdate -u time.google.com
 
 # 创建目录结构
 echo "📁 创建目录..."
@@ -132,7 +136,7 @@ docker run -d --name caddy \
     -v $PWD/caddy/data:/data/caddy \
     -v $PWD/caddy/config:/config \
     -v $PWD/caddy/logs:/var/log/caddy \
-    lingex/caddy-cf-naive
+    ${DOCKER_IMAGE}
 
 # 检查 Caddy 启动状态
 echo "⏳ 等待 Caddy 启动..."
@@ -152,7 +156,7 @@ if ! docker ps -a --format '{{.Names}}' | grep -q "^watchtower$"; then
     docker run -d --name watchtower \
         --restart=unless-stopped \
         -v /var/run/docker.sock:/var/run/docker.sock \
-        containrrr/watchtower --cleanup --interval 86400
+        containrrr/watchtower --cleanup --interval 21600
 else
     echo "✅ Watchtower 已在运行"
 fi
