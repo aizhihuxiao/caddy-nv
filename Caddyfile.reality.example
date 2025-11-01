@@ -1,0 +1,41 @@
+{
+	# ACME 配置 - 支持多个证书颁发机构
+	# acme_ca https://acme-v02.api.letsencrypt.org/directory
+	
+	# 日志级别
+	debug
+	
+	# 电子邮件（用于ACME注册）
+	email admin@domain
+}
+
+# Caddy HTTPS 服务 - NaiveProxy (内部端口8443)
+# sing-box 监听443，非 Reality 流量会 fallback 到这里
+https://domain:8443, https://*.domain:8443 {
+	bind 127.0.0.1
+	
+	tls {
+		dns cloudflare cloudflareApiToken
+	}
+	
+	route {
+		# NaiveProxy 路径
+		reverse_proxy /proxyPath localhost:2333 {
+			header_up -Origin
+		}
+		
+		# NaiveProxy Forward Proxy
+		forward_proxy {
+			basic_auth naive_user naive_passwd
+			hide_ip
+			hide_via
+			probe_resistance
+		}
+		
+		# 默认回落
+		reverse_proxy https://www.catalog.update.microsoft.com {
+			header_up Host {upstream_hostport}
+			header_up x-Forward-Host {host}
+		}
+	}
+}
