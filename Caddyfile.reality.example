@@ -1,7 +1,4 @@
 {
-	# ACME 配置 - 支持多个证书颁发机构
-	# acme_ca https://acme-v02.api.letsencrypt.org/directory
-	
 	# 日志级别
 	debug
 	
@@ -9,14 +6,9 @@
 	email admin@domain
 }
 
-# HTTP 重定向到 HTTPS (端口80)
-http://domain, http://*.domain {
-	redir https://{host}{uri} permanent
-}
-
 # Caddy HTTPS 服务 - NaiveProxy (内部端口8443)
-# sing-box 监听443，非 Reality 流量会 fallback 到这里
-https://domain:8443, https://*.domain:8443 {
+# sing-box 在 443 做 TLS termination，fallback 非 Reality 流量到这里
+domain:8443, *.domain:8443 {
 	bind 127.0.0.1
 	
 	tls {
