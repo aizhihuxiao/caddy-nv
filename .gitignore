@@ -30,6 +30,7 @@ run.sh
 run-interactive.sh
 run-naicha.sh
 build-and-push.sh
+docker-entrypoint.sh
 
 # 证书文件（敏感）
 certificates/
