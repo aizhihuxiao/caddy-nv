@@ -1,0 +1,33 @@
+{
+	debug
+	email admin@domain
+}
+
+# HTTP 重定向到 HTTPS
+http://domain, http://*.domain {
+	redir https://{host}{uri} permanent
+}
+
+# Caddy HTTPS 服务 - NaiveProxy (内部端口8443)
+# sing-box 在外部 443 监听，非 Reality 流量 fallback 到这里
+domain:8443, *.domain:8443 {
+	bind 127.0.0.1
+	
+	tls {
+		dns cloudflare cloudflareApiToken
+	}
+	
+	route {
+		forward_proxy {
+			basic_auth naive_user naive_passwd
+			hide_ip
+			hide_via
+			probe_resistance
+		}
+		
+		reverse_proxy https://www.catalog.update.microsoft.com {
+			header_up Host {upstream_hostport}
+			header_up X-Forwarded-Host {host}
+		}
+	}
+}

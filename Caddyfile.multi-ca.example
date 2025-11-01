@@ -1,0 +1,52 @@
+{
+	# ACME 配置 - 支持多个证书颁发机构
+	# 默认使用 Let's Encrypt，可以手动或通过脚本切换
+	
+	# 方式1: Let's Encrypt (默认，每天限制5次失败)
+	# acme_ca https://acme-v02.api.letsencrypt.org/directory
+	
+	# 方式2: Let's Encrypt Staging (测试用，不限制)
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+	
+	# 方式3: ZeroSSL (免费，每天限制不同)
+	# acme_ca https://acme.zerossl.com/v2/DV90
+	
+	# 方式4: Google Trust Services (免费，需要Google账号)
+	# acme_ca https://dv.acme-v02.api.pki.goog/directory
+	
+	# 方式5: Buypass Go SSL (免费，挪威CA)
+	# acme_ca https://api.buypass.com/acme/directory
+	
+	# 日志级别
+	debug
+	
+	# 电子邮件（用于ACME注册）
+	email admin@domain
+}
+
+:443, *.domain, domain {
+	tls {
+		dns cloudflare cloudflareApiToken
+		
+		# ACME CA配置将通过全局选项或环境变量动态设置
+		# 这里保持默认行为
+	}
+	
+	route {
+		reverse_proxy /proxyPath localhost:2333 {
+			header_up -Origin
+		}
+		
+		forward_proxy {
+			basic_auth naive_user naive_passwd
+			hide_ip
+			hide_via
+			probe_resistance
+		}
+		
+		reverse_proxy https://www.catalog.update.microsoft.com {
+			header_up Host {upstream_hostport}
+			header_up x-Forward-Host {host}
+		}
+	}
+}
