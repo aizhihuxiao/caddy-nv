@@ -9,6 +9,11 @@
 	email admin@domain
 }
 
+# HTTP 重定向到 HTTPS (端口80)
+http://domain, http://*.domain {
+	redir https://{host}{uri} permanent
+}
+
 # Caddy HTTPS 服务 - NaiveProxy (内部端口8443)
 # sing-box 监听443，非 Reality 流量会 fallback 到这里
 https://domain:8443, https://*.domain:8443 {
@@ -19,11 +24,6 @@ https://domain:8443, https://*.domain:8443 {
 	}
 	
 	route {
-		# NaiveProxy 路径
-		reverse_proxy /proxyPath localhost:2333 {
-			header_up -Origin
-		}
-		
 		# NaiveProxy Forward Proxy
 		forward_proxy {
 			basic_auth naive_user naive_passwd
@@ -32,10 +32,10 @@ https://domain:8443, https://*.domain:8443 {
 			probe_resistance
 		}
 		
-		# 默认回落
+		# 默认回落（伪装网站）
 		reverse_proxy https://www.catalog.update.microsoft.com {
 			header_up Host {upstream_hostport}
-			header_up x-Forward-Host {host}
+			header_up X-Forwarded-Host {host}
 		}
 	}
 }

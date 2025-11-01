@@ -34,6 +34,12 @@
         "server": "127.0.0.1",
         "server_port": 8443
       }
+    },
+    {
+      "type": "redirect",
+      "tag": "redirect-in",
+      "listen": "::",
+      "listen_port": 80
     }
   ],
   "outbounds": [
@@ -48,6 +54,10 @@
   ],
   "route": {
     "rules": [
+      {
+        "inbound": "redirect-in",
+        "outbound": "direct"
+      },
       {
         "geoip": "private",
         "outbound": "block"
