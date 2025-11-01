@@ -85,10 +85,15 @@ ENV XDG_CONFIG_HOME=/config \
     TZ=Asia/Shanghai
 
 # 暴露端口
-EXPOSE 80 443 2019 8443 8444
+EXPOSE 80 443 2019 8443
 
 # 数据卷
 VOLUME ["/config", "/data", "/var/log/caddy", "/etc/sing-box", "/var/log/sing-box"]
+
+# 复制启动脚本（在切换用户之前）
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh && \
+    chown caddy:caddy /usr/local/bin/docker-entrypoint.sh
 
 # 切换到非 root 用户（安全性）
 USER caddy
@@ -96,13 +101,9 @@ USER caddy
 # 工作目录
 WORKDIR /config/caddy
 
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:2019/config/ || exit 1
-
-# 启动脚本
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+# 健康检查 - 检查 Caddy 进程是否运行
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD pgrep caddy > /dev/null || exit 1
 
 # 启动命令 - 同时运行 Caddy 和 sing-box
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
